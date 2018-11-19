@@ -1,0 +1,21 @@
+main
+
+initialize
+	mug kans hungry [0,1]
+	mug kans beet [0,1] indien hungry
+	mug kans overleiden [0,1]
+	mug bewegen
+	mens kans overleiden [0,1]
+	mens kans overleiden na infectie [0,1]
+	mens kans immuun worden na infectie [0,1]
+
+human.py
+	sick True/False
+	immune True/False
+
+musquito.py
+	infected True/False
+	hungry True/False
+
+grid.py
+	def plot	Ramon
