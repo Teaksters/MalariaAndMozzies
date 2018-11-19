@@ -10,4 +10,4 @@ class Mosquito(object):
         pass
 
     def eat():
-        '''Survival rate and succesrate of meal'''
+        '''Survival rate, disease transmission rate and succesrate of meal'''
