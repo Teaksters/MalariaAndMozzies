@@ -18,4 +18,4 @@ musquito.py
 	hungry True/False
 
 grid.py
-	def plot	Ramon
+	def plot	Ramón
