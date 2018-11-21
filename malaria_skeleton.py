@@ -3,15 +3,16 @@ import numpy as np
 
 
 class Model:
-    def __init__(self, width=50, height=50, nHuman=10, nMosquito=20,
-                 initMosquitoHungry=1.0, 
+    def __init__(self, width=50, height=50, nHuman=20, nMosquito=100,
+                 initMosquitoHungry=0.5,
                  initHumanInfected=0.5,
-                 humanInfectionProb=0.25, 
-                 mosquitoInfectionProb=0.9,
-                 biteProb=1.0,
-                 mosquitoHungryProb=0.5,
-                 humanCureProb = 0.5,
-                 humanSickDieProb = 0.5):
+                 humanInfectionProb=0.7,
+                 mosquitoInfectionProb=0.7,
+                 biteProb=0.9,
+                 mosquitoHungryProb=0.2,
+                 humanCureProb = 0.005,
+                 humanSickDieProb = 0.005,
+                 humanDieProb = 0.005):
         """
         Model parameters
         Initialize the model with the width and height parameters.
@@ -27,6 +28,7 @@ class Model:
         self.mosquitoHungryProb = mosquitoHungryProb
         self.humanCureProb = humanCureProb
         self.humanSickDieProb = humanSickDieProb
+        self.humanDieProb = humanDieProb
 
         """
         Data parameters
@@ -104,28 +106,38 @@ class Model:
         for m in self.mosquitoPopulation:
             m.move(width = self.width, height = self.height)
             for h in self.humanPopulation:
-                if m.position == h.position:
-                    print("we met!  ")
                 if m.position == h.position and m.hungry and np.random.uniform() <= self.biteProb:
-                    print("bite!")
                     m.bite(h, m, self.humanInfectionProb, self.mosquitoInfectionProb)
             
             '''Each musquito has a chance to get hungry'''
             if np.random.uniform() <= self.mosquitoHungryProb:
                 m.hungry = True
-
+        
+        humanInfectedCount = 0
+        humanDeathCount = 0
+        humanResistentCount = 0
         for h in self.humanPopulation:
-            """
-            To implement: update the human population.
-            """
-            pass
+            if h.state == 'D':
+                humanDeathCount += 1
+                ''''respawn human!'''
+                h.state = 'S'
+            if np.random.uniform() <= self.humanDieProb:
+                h.state = 'D'
+            if h.state == 'I':
+                humanInfectedCount += 1
+                if np.random.uniform() <= self.humanCureProb:
+                    h.state = 'R'
+                if np.random.uniform() <= self.humanSickDieProb:
+                    h.state = 'D'
+            if h.state == 'R':
+                humanResistentCount +=1
+
         """
         To implement: update the data/statistics e.g. infectedCound,
                       deathCount, etc.
         """
 
-
-        return self.infectedCount, self.deathCount, len(self.mosquitoPopulation)
+        return humanInfectedCount, humanDeathCount, humanResistentCount, len(self.mosquitoPopulation)
 
 
 class Mosquito:
@@ -151,12 +163,12 @@ class Mosquito:
         if self.infected and human.state == 'S':
             if np.random.uniform() <= humanInfectionProb:
                 human.state = 'I'
+                print("INFECTEDHUMAN")
         elif not self.infected and human.state == 'I':
             if np.random.uniform() <= mosquitoInfectionProb:
                 self.infected = True
+                print("INFECTEDMUSQUITO")
         musquito.hungry = False
-        print("m_hungry =", musquito.hungry, "m_infected =",musquito.infected)
-        print("& h_state =", human.state)
 
 
     def move(self, width, height):
@@ -166,7 +178,7 @@ class Mosquito:
         deltaX = np.random.randint(-1, 1)
         deltaY = np.random.randint(-1, 1)
 
-        # set boundries
+        '''set movement boundries'''
         if (self.position[0] + deltaX) < 0:
             deltaX = 1
         if (self.position[1] + deltaY) < 0:
@@ -178,7 +190,6 @@ class Mosquito:
 
         self.position[0] += deltaX
         self.position[1] += deltaY
-
 
 class Human:
     def __init__(self, x, y, state):
@@ -196,9 +207,9 @@ if __name__ == '__main__':
     Simulation parameters
     """
     fileName = 'simulation'
-    timeSteps = 30
+    timeSteps = 1000
     t = 0
-    plotData = False
+    plotData = True
     """
     Run a simulation for an indicated number of timesteps.
     """
@@ -207,8 +218,8 @@ if __name__ == '__main__':
     print('Starting simulation')
     while t < timeSteps:
         # print("calculating t = ", t)
-        [d1, d2, d3] = sim.update()  # Catch the data
-        line = str(t) + ',' + str(d1) + ',' + str(d2) + ',' + str(d3) + '\n'  # Separate the data with commas
+        [humanInfectedCount, humanDeathCount, humanResistentCount, nmosquitos] = sim.update()  # Catch the data
+        line = str(t) + ',' + str(humanInfectedCount) + ',' + str(humanDeathCount) + ',' + str(humanResistentCount) + ',' + str(nmosquitos)  + '\n'  # Separate the data with commas
         file.write(line)  # Write the data to a .csv file
 
         t += 1
@@ -220,11 +231,12 @@ if __name__ == '__main__':
         """
         data = np.loadtxt(fileName + '.csv', delimiter=',')
         time = data[:, 0]
-        infectedCount = data[:, 1]
-        deathCount = data[:, 2]
-        MosquitoCount = data[:, 3]
-        plt.plot(time, infectedCount, label='infected')
-        plt.plot(time, deathCount, label='deaths')
-        plt.plot(time, MosquitoCount, label='Mosquitos')
+        humanInfectedCount = data[:, 1]
+        humanDeathCount = data[:, 2]
+        humanResistentCount = data[:, 3]
+        nmosquitos = data[:, 4]
+        plt.plot(time, humanInfectedCount, label='humanInfectedCount')
+        plt.plot(time, humanDeathCount, label='humanDeathCount')
+        plt.plot(time, humanResistentCount, label='humanResistentCount')
         plt.legend()
         plt.show()
