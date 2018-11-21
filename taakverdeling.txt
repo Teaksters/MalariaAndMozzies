@@ -19,3 +19,5 @@ musquito.py
 
 grid.py
 	def plot	Ramón
+
+we hebben een nieuwe taakverdeling nodig, want we hebben nu een skeleton code!
