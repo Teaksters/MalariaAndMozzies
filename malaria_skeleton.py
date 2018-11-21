@@ -33,7 +33,7 @@ class Model:
         Make a data structure in this case a list with the humans and mosquitos.
         """
         self.humanPopulation = self.set_human_population(initHumanInfected)
-        self.mosquitoPopulation = self.set_mosquito_popualtion(initMosquitoHungry)
+        self.mosquitoPopulation = self.set_mosquito_population(initMosquitoHungry)
 
     def set_human_population(self, initHumanInfected):
         """
@@ -84,7 +84,7 @@ class Model:
             population, and add a replacement human.
         """
         for m in self.mosquitoPopulation:
-            m.move()
+            m.move(width = self.width, height = self.height)
             for h in self.humanPopulation:
                 if m.position == h.position and m.hungry\
                    and np.random.uniform() <= self.biteProb:
@@ -114,7 +114,7 @@ class Mosquito:
         position on the grid. Mosquitos can start out hungry or not hungry.
         All mosquitos are initialized infection free (this can be modified).
         """
-        self.position = (x, y)
+        self.position = [x, y]
         self.hungry = hungry
         self.infected = False
 
@@ -134,7 +134,7 @@ class Mosquito:
                 self.infected = True
         self.hungry = False
 
-    def move(self):
+    def move(self, width, height):
         """
         Moves the mosquito one step in a random direction.
         """
@@ -148,6 +148,16 @@ class Mosquito:
                       - periodic boundaries: implement a wrap around i.e. if
                         y+deltaY > ymax -> y = 0.
         """
+
+        if self.position[0] + deltaX < 0:
+            deltaX = 1
+        if self.position[1] + deltaY < 0:
+            deltaX = 1
+        if self.position[0] + deltaX > width:
+            deltaX = -1
+        if self.position[1] + deltaY > height:
+            deltaY = -1
+
         self.position[0] += deltaX
         self.position[1] += deltaY
 
@@ -159,7 +169,7 @@ class Human:
         position on the grid. Humans can start out susceptible or infected
         (or immune).
         """
-        self.position = (x, y)
+        self.position = [x, y]
         self.state = state
 
 
@@ -168,7 +178,7 @@ if __name__ == '__main__':
     Simulation parameters
     """
     fileName = 'simulation'
-    timeSteps = 100
+    timeSteps = 5
     t = 0
     plotData = True
     """
