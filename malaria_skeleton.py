@@ -18,7 +18,7 @@ class Model:
         self.humanInfectionProb = humanInfectionProb
         self.mosquitoInfectionProb = mosquitoInfectionProb
         self.biteProb = biteProb
-        # etc.
+        self.presentHumans = set()
 
         """
         Data parameters
@@ -33,7 +33,7 @@ class Model:
         Make a data structure in this case a list with the humans and mosquitos.
         """
         self.humanPopulation = self.set_human_population(initHumanInfected)
-        self.mosquitoPopulation = self.set_mosquito_popualtion(initMosquitoHungry)
+        self.mosquitoPopulation = self.set_mosquito_population(initMosquitoHungry)
 
     def set_human_population(self, initHumanInfected):
         """
@@ -46,14 +46,20 @@ class Model:
         for i in range(self.nHuman):
             x = np.random.randint(self.width)
             y = np.random.randint(self.height)
-            """
-            To implement: Humans may not have overlapping positions.
-            """
-            if (i // self.nHuman) <= initHumanInfected:
-                state = 'I'  # I for infected
-            else:
-                state = 'S'  # S for susceptible
-            humanPopulation.append(Human(x, y, state))
+            '''Place humans only on human free spots randomly.'''
+            while True:
+                # If location is not taken place human
+                if (x, y) not in self.presentHumans:
+                    if (i // self.nHuman) <= initHumanInfected:
+                        state = 'I'  # I for infected
+                    else:
+                        state = 'S'  # S for susceptible
+                    humanPopulation.append(Human(x, y, state))
+                    self.presentHumans.add((x, y))
+                    break
+                # Try again for new location
+                x = np.random.randint(self.width)
+                y = np.random.randint(self.height)
         return humanPopulation
 
     def set_mosquito_population(self, initMosquitoHungry):
@@ -90,10 +96,11 @@ class Model:
                    and np.random.uniform() <= self.biteProb:
                     m.bite(h, self.humanInfectionProb,
                            self.mosquitoInfectionProb)
-        """
-        To implement: set the hungry state from false to true after a
-                     number of time steps has passed.
-        """
+            '''If not eaten for timeTillHungry steps, mosquito gets hungry.'''
+            print(m.timeSinceFeed < timeTillHungry)
+            if m.timeSinceFeed < timeTillHungry:
+                m.hungry = True
+            m.timeSinceFeed += 1
 
         for h in self.humanPopulation:
             """
@@ -114,9 +121,10 @@ class Mosquito:
         position on the grid. Mosquitos can start out hungry or not hungry.
         All mosquitos are initialized infection free (this can be modified).
         """
-        self.position = (x, y)
+        self.position = [x, y]
         self.hungry = hungry
         self.infected = False
+        self.timeSinceFeed = 0
 
     def bite(self, human, humanInfectionProb, mosquitoInfectionProb):
         """
@@ -133,6 +141,7 @@ class Mosquito:
             if np.random.uniform() <= mosquitoInfectionProb:
                 self.infected = True
         self.hungry = False
+        self.timeSinceFeed = 0
 
     def move(self):
         """
@@ -171,6 +180,7 @@ if __name__ == '__main__':
     timeSteps = 100
     t = 0
     plotData = True
+    timeTillHungry = 3
     """
     Run a simulation for an indicated number of timesteps.
     """
