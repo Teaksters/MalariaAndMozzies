@@ -33,7 +33,7 @@ class Model:
         Make a data structure in this case a list with the humans and mosquitos.
         """
         self.humanPopulation = self.set_human_population(initHumanInfected)
-        self.mosquitoPopulation = self.set_mosquito_population(initMosquitoHungry)
+        self.mosquitoPopulation = self.set_mosquito_popualtion(initMosquitoHungry)
 
     def set_human_population(self, initHumanInfected):
         """
