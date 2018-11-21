@@ -50,7 +50,7 @@ class Model:
             while True:
                 # If location is not taken place human
                 if (x, y) not in self.presentHumans:
-                    if (i // self.nHuman) <= initHumanInfected:
+                    if (i / self.nHuman) <= initHumanInfected:
                         state = 'I'  # I for infected
                     else:
                         state = 'S'  # S for susceptible
@@ -73,7 +73,7 @@ class Model:
         for i in range(self.nMosquito):
             x = np.random.randint(self.width)
             y = np.random.randint(self.height)
-            if (i // self.nMosquito) <= initMosquitoHungry:
+            if (i / self.nMosquito) <= initMosquitoHungry:
                 hungry = True
             else:
                 hungry = False
@@ -97,7 +97,7 @@ class Model:
                     m.bite(h, self.humanInfectionProb,
                            self.mosquitoInfectionProb)
             '''If not eaten for timeTillHungry steps, mosquito gets hungry.'''
-            print(m.timeSinceFeed < timeTillHungry)
+            # print(m.timeSinceFeed < timeTillHungry)
             if m.timeSinceFeed < timeTillHungry:
                 m.hungry = True
             m.timeSinceFeed += 1
@@ -198,15 +198,18 @@ if __name__ == '__main__':
     sim = Model()
     print('Starting simulation')
     while t < timeSteps:
+        print("calculating t = ", t)
         [d1, d2] = sim.update()  # Catch the data
         line = str(t) + ',' + str(d1) + ',' + str(d2) + '\n'  # Separate the data with commas
         file.write(line)  # Write the data to a .csv file
+        t += 1
+    file.close()
 
     if plotData:
         """
         Make a plot by from the stored simulation data.
         """
-        data = np.loadtxt(fileName+'.csv', delimiter=',')
+        data = np.loadtxt(fileName + '.csv', delimiter=',')
         time = data[:, 0]
         infectedCount = data[:, 1]
         deathCount = data[:, 2]
