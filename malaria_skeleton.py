@@ -90,7 +90,7 @@ class Model:
             population, and add a replacement human.
         """
         for m in self.mosquitoPopulation:
-            m.move()
+            m.move(width = self.width, height = self.height)
             for h in self.humanPopulation:
                 if m.position == h.position and m.hungry\
                    and np.random.uniform() <= self.biteProb:
@@ -143,7 +143,7 @@ class Mosquito:
         self.hungry = False
         self.timeSinceFeed = 0
 
-    def move(self):
+    def move(self, width, height):
         """
         Moves the mosquito one step in a random direction.
         """
@@ -157,6 +157,16 @@ class Mosquito:
                       - periodic boundaries: implement a wrap around i.e. if
                         y+deltaY > ymax -> y = 0.
         """
+
+        if self.position[0] + deltaX < 0:
+            deltaX = 1
+        if self.position[1] + deltaY < 0:
+            deltaX = 1
+        if self.position[0] + deltaX > width:
+            deltaX = -1
+        if self.position[1] + deltaY > height:
+            deltaY = -1
+
         self.position[0] += deltaX
         self.position[1] += deltaY
 
@@ -168,7 +178,7 @@ class Human:
         position on the grid. Humans can start out susceptible or infected
         (or immune).
         """
-        self.position = (x, y)
+        self.position = [x, y]
         self.state = state
 
 
@@ -177,7 +187,7 @@ if __name__ == '__main__':
     Simulation parameters
     """
     fileName = 'simulation'
-    timeSteps = 100
+    timeSteps = 5
     t = 0
     plotData = True
     timeTillHungry = 3
