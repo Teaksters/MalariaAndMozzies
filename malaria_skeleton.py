@@ -3,7 +3,7 @@ import numpy as np
 
 
 class Model:
-    def __init__(self, width=50, height=50, nHuman=20, nMosquito=100,
+    def __init__(self, width=50, height=50, nHuman=20, nMosquito=1000,
                  initMosquitoHungry=0.5,
                  initHumanInfected=0.5,
                  humanInfectionProb=0.7,
@@ -30,14 +30,6 @@ class Model:
         self.humanSickDieProb = humanSickDieProb
         self.humanDieProb = humanDieProb
 
-        """
-        Data parameters
-        To record the evolution of the model
-        """
-        self.infectedCount = 0
-        self.deathCount = 0
-
-        # etc.
 
         """
         Population setters
@@ -163,11 +155,9 @@ class Mosquito:
         if self.infected and human.state == 'S':
             if np.random.uniform() <= humanInfectionProb:
                 human.state = 'I'
-                print("INFECTEDHUMAN")
         elif not self.infected and human.state == 'I':
             if np.random.uniform() <= mosquitoInfectionProb:
                 self.infected = True
-                print("INFECTEDMUSQUITO")
         musquito.hungry = False
 
 
@@ -175,8 +165,8 @@ class Mosquito:
         """
         Moves the mosquito one step in a random direction.
         """
-        deltaX = np.random.randint(-1, 1)
-        deltaY = np.random.randint(-1, 1)
+        deltaX = np.random.randint(-1, 2)
+        deltaY = np.random.randint(-1, 2)
 
         '''set movement boundries'''
         if (self.position[0] + deltaX) < 0:
