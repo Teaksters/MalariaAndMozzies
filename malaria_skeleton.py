@@ -1,17 +1,40 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+# progressbar, copied from:
+# https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = '\r')
+    # Print New Line on Complete
+    if iteration == total: 
+        print()
+
 
 class Model:
-    def __init__(self, width=50, height=50, nHuman=20, nMosquito=1000,
+    def __init__(self, width=50, height=50, nHuman=50, nMosquito=2000,
                  initMosquitoHungry=0.5,
                  initHumanInfected=0.5,
                  humanInfectionProb=0.7,
                  mosquitoInfectionProb=0.7,
-                 biteProb=0.9,
+                 mosquitoHungryDieProb=0.01,
+                 biteProb=0.7,
                  mosquitoHungryProb=0.2,
-                 humanCureProb = 0.005,
-                 humanSickDieProb = 0.005,
+                 humanCureProb = 0.002,
+                 humanSickDieProb = 0.01,
                  humanDieProb = 0.005):
         """
         Model parameters
@@ -23,12 +46,14 @@ class Model:
         self.nMosquito = nMosquito
         self.humanInfectionProb = humanInfectionProb
         self.mosquitoInfectionProb = mosquitoInfectionProb
+        self.mosquitoHungryDieProb = mosquitoHungryDieProb
         self.biteProb = biteProb
         self.presentHumans = set()
         self.mosquitoHungryProb = mosquitoHungryProb
         self.humanCureProb = humanCureProb
         self.humanSickDieProb = humanSickDieProb
         self.humanDieProb = humanDieProb
+
 
 
         """
@@ -85,7 +110,7 @@ class Model:
 
         return mosquitoPopulation
 
-    def update(self):
+    def update(self, SimulateMosquitonets, SimulateMosquitonetsAftertimeSteps,TimeStep):
         """
         Perform one timestep:
         1.  Update mosquito population. Move the mosquitos. If a mosquito is
@@ -95,22 +120,43 @@ class Model:
             population, and add a replacement human.
         """
 
+        MosquitoInfectedCount = 0
+        MosquitoHungryCount = 0
         for m in self.mosquitoPopulation:
             m.move(width = self.width, height = self.height)
             for h in self.humanPopulation:
                 if m.position == h.position and m.hungry and np.random.uniform() <= self.biteProb:
-                    m.bite(h, m, self.humanInfectionProb, self.mosquitoInfectionProb)
+                    # simulate mosquitonets if 
+                    if SimulateMosquitonets == True:
+                        if TimeStep > SimulateMosquitonetsAftertimeSteps:
+                            if np.random.uniform() <= 0.2:
+                                m.bite(h, m, self.humanInfectionProb, self.mosquitoInfectionProb)
+                        else:
+                            m.bite(h, m, self.humanInfectionProb, self.mosquitoInfectionProb)
+                    else:
+                        m.bite(h, m, self.humanInfectionProb, self.mosquitoInfectionProb)
             
+            '''Each mosquito has a chance to die when hungry, and suddenly a new mosquito respawns!'''
+            if np.random.uniform() <= self.mosquitoHungryDieProb:
+                m.infected = False
+                m.hungry = False
+
             '''Each musquito has a chance to get hungry'''
             if np.random.uniform() <= self.mosquitoHungryProb:
                 m.hungry = True
+
+            if m.infected == True:
+                MosquitoInfectedCount += 1
+            if m.hungry == True:
+                MosquitoHungryCount += 1
         
         humanInfectedCount = 0
-        humanDeathCount = 0
+        humanSusceptibleCount = 0
         humanResistentCount = 0
         for h in self.humanPopulation:
+            if h.state == 'S':
+                humanSusceptibleCount += 1
             if h.state == 'D':
-                humanDeathCount += 1
                 ''''respawn human!'''
                 h.state = 'S'
             if np.random.uniform() <= self.humanDieProb:
@@ -129,7 +175,7 @@ class Model:
                       deathCount, etc.
         """
 
-        return humanInfectedCount, humanDeathCount, humanResistentCount, len(self.mosquitoPopulation)
+        return humanInfectedCount, humanResistentCount, humanSusceptibleCount, MosquitoInfectedCount, MosquitoHungryCount
 
 
 class Mosquito:
@@ -142,7 +188,6 @@ class Mosquito:
         self.position = [x, y]
         self.hungry = hungry
         self.infected = False
-        self.timeSinceFeed = 0
 
     def bite(self, human, musquito, humanInfectionProb, mosquitoInfectionProb):
         """
@@ -199,6 +244,8 @@ if __name__ == '__main__':
     fileName = 'simulation'
     timeSteps = 1000
     t = 0
+    SimulateMosquitonets = True
+    SimulateMosquitonetsAftertimeSteps = 500
     plotData = True
     """
     Run a simulation for an indicated number of timesteps.
@@ -206,13 +253,13 @@ if __name__ == '__main__':
     file = open(fileName + '.csv', 'w')
     sim = Model()
     print('Starting simulation')
-    while t < timeSteps:
-        # print("calculating t = ", t)
-        [humanInfectedCount, humanDeathCount, humanResistentCount, nmosquitos] = sim.update()  # Catch the data
-        line = str(t) + ',' + str(humanInfectedCount) + ',' + str(humanDeathCount) + ',' + str(humanResistentCount) + ',' + str(nmosquitos)  + '\n'  # Separate the data with commas
-        file.write(line)  # Write the data to a .csv file
 
+    while t < timeSteps:
+        [humanInfectedCount, humanResistentCount, humanSusceptibleCount, MosquitoInfectedCount, MosquitoHungryCount] = sim.update(SimulateMosquitonets, SimulateMosquitonetsAftertimeSteps, TimeStep = t)  # Catch the data
+        line = str(t) + ',' + str(humanInfectedCount) + ',' + str(humanResistentCount) + ',' + str(humanSusceptibleCount) + ',' + str(MosquitoInfectedCount) + ',' + str(MosquitoHungryCount)   + '\n'  # Separate the data with commas
+        file.write(line)  # Write the data to a .csv file
         t += 1
+        printProgressBar(t, timeSteps, prefix = 'Calculating simulation:', suffix = 'Complete', length = 50) # print progress
     file.close()
 
     if plotData:
@@ -222,11 +269,27 @@ if __name__ == '__main__':
         data = np.loadtxt(fileName + '.csv', delimiter=',')
         time = data[:, 0]
         humanInfectedCount = data[:, 1]
-        humanDeathCount = data[:, 2]
-        humanResistentCount = data[:, 3]
-        nmosquitos = data[:, 4]
+        humanResistentCount = data[:, 2]
+        humanSusceptibleCount = data[:, 3]
+        MosquitoInfectedCount = data[:, 4]
+        MosquitoHungryCount = data[:, 5]
+
+        # subplot human data
+        plt.subplot(2, 1, 1)
         plt.plot(time, humanInfectedCount, label='humanInfectedCount')
-        plt.plot(time, humanDeathCount, label='humanDeathCount')
         plt.plot(time, humanResistentCount, label='humanResistentCount')
+        plt.plot(time, humanSusceptibleCount, label='humanSusceptibleCount')
+        if SimulateMosquitonets == True:
+            plt.axvline(SimulateMosquitonetsAftertimeSteps)
         plt.legend()
+
+        # subplot mosquito data
+        plt.subplot(2, 1, 2)
+        plt.plot(time, MosquitoInfectedCount, label='MosquitoInfectedCount')
+        plt.plot(time, MosquitoHungryCount, label='MosquitoHungryCount')
+        if SimulateMosquitonets == True:
+            plt.axvline(SimulateMosquitonetsAftertimeSteps)
+        plt.legend()
+
+        # plot plot
         plt.show()
