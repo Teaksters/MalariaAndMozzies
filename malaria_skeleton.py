@@ -28,7 +28,7 @@ def printProgressBar(iteration, total, prefix='', suffix ='',
 class Model:
     def __init__(self, width=50, height=50, nHuman=720, nMosquito=925,
                  initMosquitoHungry=0.5,
-                 initHumanInfected=0.8,
+                 initHumanInfected=0.4,
                  humanInfectionProb=0.7,
                  mosquitoInfectionProb=0.9,
                  mosquitoHungryDieProb=0.05,
@@ -110,8 +110,14 @@ class Model:
 
         return mosquitoPopulation
 
+    def place_nets(self, percentage, reverse=True):
+        '''Gives a percentage of the human population mosquitonets.'''
+        for h in self.humanPopulation:
+            if np.random.uniform() <= percentage:
+                h.nets = reverse
+
     def update(self, SimulateMosquitonets, SimulateMosquitonetsAftertimeSteps,
-               TimeStep):
+               TimeStep, netpercentage, removeTime):
         """
         Perform one timestep:
         1.  Update mosquito population. Move the mosquitos. If a mosquito is
@@ -120,7 +126,11 @@ class Model:
         2.  Update the human population. If a human dies remove it from the
             population, and add a replacement human.
         """
-
+        # Give human population mosquitonets
+        if TimeStep == SimulateMosquitonetsAftertimeSteps:
+            self.place_nets(netpercentage)
+        if TimeStep == removeTime:
+            self.place_nets(netpercentage, reverse=False)
         MosquitoInfectedCount = 0
         MosquitoHungryCount = 0
         for m in self.mosquitoPopulation:
@@ -130,7 +140,8 @@ class Model:
                    np.random.uniform() <= self.biteProb:
                     # simulate mosquitonets by decreasing biting chance
                     if SimulateMosquitonets is True:
-                        if TimeStep > SimulateMosquitonetsAftertimeSteps:
+                        if TimeStep > SimulateMosquitonetsAftertimeSteps \
+                           and h.nets:
                             if np.random.uniform() <= 0.2:
                                 m.bite(h, m, self.humanInfectionProb,
                                        self.mosquitoInfectionProb)
@@ -244,6 +255,7 @@ class Human:
         """
         self.position = [x, y]
         self.state = state
+        self.nets = False
 
 
 if __name__ == '__main__':
@@ -251,12 +263,14 @@ if __name__ == '__main__':
     Simulation parameters
     """
     fileName = 'simulation'
-    timeSteps = 1000
+    timeSteps = 1500
     t = 0
     SimulateMosquitonets = True
     SimulateMosquitonetsAftertimeSteps = 0
+    RemoveNetsAfterTimeSteps = 1000
     plotData = True
     safePlot = True
+    netpercentage = 0.95
     """
     Run a simulation for an indicated number of timesteps.
     """
@@ -269,7 +283,8 @@ if __name__ == '__main__':
         [humanInfectedCount, humanResistentCount, humanSusceptibleCount,
          MosquitoInfectedCount, MosquitoHungryCount] = \
             sim.update(SimulateMosquitonets,
-                       SimulateMosquitonetsAftertimeSteps, t)
+                       SimulateMosquitonetsAftertimeSteps, t, netpercentage,
+                       RemoveNetsAfterTimeSteps)
         # Separate the data with commas store as string
         line = str(t) + ',' + str(humanInfectedCount) + ',' + \
                str(humanResistentCount) + ',' + str(humanSusceptibleCount) + \
@@ -301,6 +316,7 @@ if __name__ == '__main__':
         plt.plot(time, humanSusceptibleCount, label='Susceptible')
         if SimulateMosquitonets is True:
             plt.axvline(SimulateMosquitonetsAftertimeSteps)
+            plt.axvline(RemoveNetsAfterTimeSteps, color='r')
         plt.legend(loc=9, bbox_to_anchor=(0.5, 1.3))
 
         # subplot mosquito data
