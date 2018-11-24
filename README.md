@@ -2,6 +2,8 @@
 A preditor prey model for malaria in mosquito's with added option of simulating
 insecticide nets preventing bites.
 
+By: Ramon [achternaam + studentnr] and Arne Meijs 11057580
+
 ## Testing
 If you want to run a visualized simulation that is possible. To start a visualized run,
 give the following instruction in your terminal:
