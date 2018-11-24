@@ -234,6 +234,7 @@ class Mosquito:
         self.position[0] += deltaX
         self.position[1] += deltaY
 
+
 class Human:
     def __init__(self, x, y, state):
         """
@@ -252,8 +253,8 @@ if __name__ == '__main__':
     fileName = 'simulation'
     timeSteps = 1000
     t = 0
-    SimulateMosquitonets = False
-    SimulateMosquitonetsAftertimeSteps = 500
+    SimulateMosquitonets = True
+    SimulateMosquitonetsAftertimeSteps = 0
     plotData = True
     safePlot = True
     """
